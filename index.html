@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Madhav Birdh — Frame Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --black: #090909; --off-black: #111111; --card: #161616;
+  --border: #222222; --white: #f0ece4; --muted: #555555;
+  --accent: #c8a96e; --accent-dim: #8a6f3e; --red: #8b1a1a;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--black); color: var(--white); font-family: 'Inter', sans-serif; font-weight: 300; overflow-x: hidden; }
+
+/* GRAIN */
+.grain { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  animation: grainMove 0.5s steps(2) infinite; }
+@keyframes grainMove { 0%{transform:translate(0,0)} 25%{transform:translate(-2px,2px)} 50%{transform:translate(2px,-2px)} 75%{transform:translate(-1px,1px)} 100%{transform:translate(1px,-1px)} }
+
+/* CURSOR */
+.cursor { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9999; }
+.cursor-ring { width: 32px; height: 32px; border: 1px solid rgba(200,169,110,0.4); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9998; transition: all 0.12s ease; }
+.cursor-ring.hovered { width: 48px; height: 48px; border-color: var(--accent); margin-left: -8px; margin-top: -8px; }
+
+/* LOADER */
+.loader { position: fixed; inset: 0; z-index: 9997; background: var(--black); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1.5rem; transition: opacity 1s ease, visibility 1s; }
+.loader.hidden { opacity: 0; visibility: hidden; }
+.loader-frame { width: 120px; height: 80px; border: 1px solid var(--border); position: relative; }
+.loader-frame .c { position: absolute; width: 14px; height: 14px; border-color: var(--accent); border-style: solid; }
+.loader-frame .c.tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; animation: cMove 1.5s ease-in-out infinite; }
+.loader-frame .c.tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; animation: cMove 1.5s ease-in-out infinite 0.1s; }
+.loader-frame .c.bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; animation: cMove 1.5s ease-in-out infinite 0.2s; }
+.loader-frame .c.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; animation: cMove 1.5s ease-in-out infinite 0.3s; }
+@keyframes cMove { 0%,100%{opacity:0.4} 50%{opacity:1} }
+.loader-count { font-family: 'Bebas Neue', sans-serif; font-size: 4rem; color: var(--accent); line-height: 1; }
+.loader-bar { width: 160px; height: 1px; background: var(--border); position: relative; overflow: hidden; }
+.loader-bar-fill { position: absolute; inset: 0; background: var(--accent); transform: scaleX(0); transform-origin: left; }
+.loader-label { font-size: 0.55rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+
+/* NAV */
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 1.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid transparent; transition: all 0.4s; }
+nav.scrolled { background: rgba(9,9,9,0.96); border-color: var(--border); backdrop-filter: blur(12px); }
+.nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.2em; color: var(--accent); text-decoration: none; }
+.nav-links { display: flex; gap: 2rem; }
+.nav-links a { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.3s; position: relative; }
+.nav-links a::after { content: ''; position: absolute; bottom: -3px; left: 0; width: 0; height: 1px; background: var(--accent); transition: width 0.3s; }
+.nav-links a:hover { color: var(--white); }
+.nav-links a:hover::after { width: 100%; }
+
+/* HERO */
+.hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 2.5rem 5rem; position: relative; overflow: hidden; }
+.hero-bg { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 40%, var(--black) 100%), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.012) 2px, rgba(255,255,255,0.012) 4px); }
+
+/* HERO FRAME — breathing corners */
+.hero-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 55vw; height: 55vh; border: 1px solid rgba(200,169,110,0.1); pointer-events: none; }
+.hero-frame::before { content: ''; position: absolute; inset: 14px; border: 1px solid rgba(200,169,110,0.05); animation: innerPulse 4s ease-in-out infinite; }
+@keyframes innerPulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+.hero-frame .corner { position: absolute; width: 22px; height: 22px; border-color: var(--accent); border-style: solid; }
+.corner.tl { top:-1px; left:-1px; border-width:2px 0 0 2px; animation:breatheTL 3s ease-in-out infinite; }
+.corner.tr { top:-1px; right:-1px; border-width:2px 2px 0 0; animation:breatheTR 3s ease-in-out infinite; }
+.corner.bl { bottom:-1px; left:-1px; border-width:0 0 2px 2px; animation:breatheBL 3s ease-in-out infinite; }
+.corner.br { bottom:-1px; right:-1px; border-width:0 2px 2px 0; animation:breatheBR 3s ease-in-out infinite; }
+@keyframes breatheTL { 0%,100%{top:-1px;left:-1px;opacity:0.5} 50%{top:6px;left:6px;opacity:1} }
+@keyframes breatheTR { 0%,100%{top:-1px;right:-1px;opacity:0.5} 50%{top:6px;right:6px;opacity:1} }
+@keyframes breatheBL { 0%,100%{bottom:-1px;left:-1px;opacity:0.5} 50%{bottom:6px;left:6px;opacity:1} }
+@keyframes breatheBR { 0%,100%{bottom:-1px;right:-1px;opacity:0.5} 50%{bottom:6px;right:6px;opacity:1} }
+
+/* SCANLINE */
+.scanline { position: absolute; left:0; right:0; height:2px; background: linear-gradient(to right, transparent, rgba(200,169,110,0.12), transparent); animation: scanDown 7s linear infinite; pointer-events:none; }
+@keyframes scanDown { 0%{top:-2px} 100%{top:100vh} }
+
+/* HERO TEXT */
+.hero-eyebrow { font-size:0.65rem; letter-spacing:0.3em; text-transform:uppercase; color:var(--accent); margin-bottom:1.2rem; opacity:0; transform:translateY(20px); animation:fadeUp 0.8s 2.3s forwards; }
+.hero-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(4rem,10vw,9rem); letter-spacing:0.04em; line-height:0.9; color:var(--white); opacity:0; transform:translateY(30px); animation:fadeUp 0.9s 2.5s forwards; }
+.hero-title span { display:block; color:var(--accent); }
+.hero-sub { margin-top:1.5rem; font-size:0.8rem; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase; opacity:0; transform:translateY(20px); animation:fadeUp 0.8s 2.8s forwards; }
+.hero-scroll { position:absolute; bottom:2rem; right:2.5rem; display:flex; flex-direction:column; align-items:center; gap:8px; opacity:0; animation:fadeIn 1s 3.2s forwards; }
+.hero-scroll span { font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); writing-mode:vertical-rl; }
+.scroll-line { width:1px; height:50px; background:linear-gradient(to bottom,var(--accent),transparent); animation:scrollDrop 2s 3.5s ease-in-out infinite; }
+@keyframes scrollDrop { 0%{transform:scaleY(0);transform-origin:top} 50%{transform:scaleY(1);transform-origin:top} 51%{transform:scaleY(1);transform-origin:bottom} 100%{transform:scaleY(0);transform-origin:bottom} }
+@keyframes fadeUp { to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn { to{opacity:1} }
+
+/* MARQUEE */
+.marquee-wrap { overflow:hidden; border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:1rem 0; background:var(--off-black); }
+.marquee-track { display:flex; gap:3rem; animation:marqueeScroll 18s linear infinite; white-space:nowrap; }
+.marquee-track span { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:0.2em; color:var(--muted); }
+.marquee-track span.acc { color:var(--accent); }
+@keyframes marqueeScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+/* SECTIONS */
+section { padding:6rem 2.5rem; }
+.section-label { font-size:0.6rem; letter-spacing:0.3em; text-transform:uppercase; color:var(--accent); margin-bottom:3rem; display:flex; align-items:center; gap:1rem; }
+.section-label::after { content:''; flex:1; height:1px; background:var(--border); max-width:200px; }
+
+/* ABOUT */
+.about-grid { display:grid; grid-template-columns:1fr 1fr; gap:4rem; align-items:start; }
+.about-quote { font-family:'Playfair Display',serif; font-style:italic; font-size:clamp(1.2rem,2.5vw,1.7rem); line-height:1.6; color:var(--white); border-left:2px solid var(--accent); padding-left:1.5rem; }
+.about-text { color:var(--muted); font-size:0.9rem; line-height:1.9; }
+.about-text p+p { margin-top:1rem; }
+.about-stats { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); margin-top:2rem; border:1px solid var(--border); }
+.stat { background:var(--off-black); padding:1.2rem; transition:background 0.3s; }
+.stat:hover { background:var(--card); }
+.stat-num { font-family:'Bebas Neue',sans-serif; font-size:2.5rem; color:var(--accent); line-height:1; }
+.stat-label { font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-top:0.3rem; }
+
+/* FILM */
+.film-section { background:var(--off-black); }
+.film-card { border:1px solid var(--border); display:grid; grid-template-columns:1fr 1fr; overflow:hidden; transition:border-color 0.3s; }
+.film-card:hover { border-color:var(--accent-dim); }
+.film-visual { background:var(--card); min-height:280px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+.film-visual::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.015) 3px,rgba(255,255,255,0.015) 4px); }
+.film-play { width:60px; height:60px; border:1px solid rgba(200,169,110,0.4); border-radius:50%; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; cursor:pointer; transition:all 0.3s; text-decoration:none; }
+.film-play:hover { border-color:var(--accent); background:rgba(200,169,110,0.1); transform:scale(1.1); }
+.film-play svg { width:20px; height:20px; fill:var(--accent); margin-left:4px; }
+.film-genre-tag { position:absolute; top:1rem; left:1rem; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--red); border:1px solid var(--red); padding:3px 10px; }
+.film-info { padding:2.5rem; display:flex; flex-direction:column; justify-content:space-between; }
+.film-title { font-family:'Bebas Neue',sans-serif; font-size:2.5rem; letter-spacing:0.05em; color:var(--white); line-height:1.1; }
+.film-desc { color:var(--muted); font-size:0.85rem; line-height:1.8; margin-top:1rem; }
+.film-meta-row { display:flex; gap:1.5rem; margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border); }
+.meta-val { font-family:'Bebas Neue',sans-serif; font-size:1.4rem; color:var(--accent); }
+.meta-key { font-size:0.6rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-top:2px; }
+.film-roles-list { display:flex; flex-wrap:wrap; gap:6px; margin-top:1.5rem; }
+.role-tag { font-size:0.6rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent-dim); border:1px solid var(--border); padding:4px 10px; transition:all 0.3s; }
+.role-tag:hover { border-color:var(--accent); color:var(--accent); }
+
+/* SKILLS */
+.skills-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); }
+.skill-item { background:var(--off-black); padding:1.8rem; transition:background 0.3s; }
+.skill-item:hover { background:var(--card); }
+.skill-name { font-family:'Bebas Neue',sans-serif; font-size:1.3rem; letter-spacing:0.05em; color:var(--white); margin-bottom:0.5rem; }
+.skill-desc { font-size:0.75rem; color:var(--muted); line-height:1.6; }
+.skill-level { height:1px; background:var(--border); position:relative; margin-top:1rem; }
+.skill-level-fill { position:absolute; top:0; left:0; bottom:0; background:var(--accent); transition:width 1.4s cubic-bezier(0.4,0,0.2,1); width:0; }
+.tools-row { display:flex; flex-wrap:wrap; gap:1px; background:var(--border); border:1px solid var(--border); margin-top:1px; }
+.tool-item { background:var(--off-black); padding:1.5rem 2rem; font-size:0.7rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); transition:all 0.3s; cursor:default; }
+.tool-item:hover { background:var(--card); color:var(--accent); }
+
+/* VISION */
+.vision-section { background:var(--card); position:relative; overflow:hidden; }
+.vision-section::before { content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%; background:radial-gradient(ellipse at center,rgba(200,169,110,0.04) 0%,transparent 60%); pointer-events:none; animation:visionGlow 6s ease-in-out infinite; }
+@keyframes visionGlow { 0%,100%{opacity:0.5} 50%{opacity:1} }
+.vision-text { font-family:'Playfair Display',serif; font-style:italic; font-size:clamp(1.3rem,3vw,2rem); line-height:1.7; color:var(--white); max-width:800px; margin:0 auto; text-align:center; }
+.vision-text strong { color:var(--accent); font-style:normal; font-family:'Bebas Neue',sans-serif; font-size:1.2em; letter-spacing:0.05em; }
+.vision-origin { max-width:600px; margin:3rem auto 0; text-align:center; font-size:0.8rem; color:var(--muted); line-height:1.9; border-top:1px solid var(--border); padding-top:2rem; }
+.inspired-by { margin-top:2.5rem; text-align:center; font-size:0.65rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--accent-dim); }
+
+/* CONTACT */
+.contact-section { text-align:center; position:relative; overflow:hidden; }
+.contact-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(3rem,8vw,7rem); letter-spacing:0.05em; color:var(--white); line-height:1; margin-bottom:1rem; }
+.contact-title span { color:var(--accent); }
+.contact-sub { font-size:0.8rem; color:var(--muted); letter-spacing:0.1em; margin-bottom:3rem; }
+.contact-links { display:flex; justify-content:center; gap:1rem; flex-wrap:wrap; }
+.contact-btn { font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; padding:1rem 2rem; text-decoration:none; border:1px solid var(--border); color:var(--muted); transition:all 0.3s; display:inline-flex; align-items:center; gap:8px; }
+.contact-btn:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-2px); }
+.contact-btn.primary { background:var(--accent); border-color:var(--accent); color:var(--black); font-weight:500; }
+.contact-btn.primary:hover { background:transparent; color:var(--accent); }
+.contact-btn svg { width:14px; height:14px; fill:currentColor; }
+.social-row { display:flex; justify-content:center; gap:1.5rem; margin-top:3rem; padding-top:3rem; border-top:1px solid var(--border); }
+.social-link { width:44px; height:44px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--muted); text-decoration:none; transition:all 0.3s; }
+.social-link:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-3px); }
+.social-link svg { width:18px; height:18px; fill:currentColor; }
+
+/* FOOTER */
+footer { padding:2rem 2.5rem; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.footer-logo { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:0.2em; color:var(--accent-dim); }
+.footer-copy { font-size:0.65rem; letter-spacing:0.1em; color:var(--muted); }
+
+/* ── REVEAL ANIMATIONS ── */
+.reveal { opacity:0; transform:translateY(50px); transition:opacity 0.9s ease, transform 0.9s ease; }
+.reveal.visible { opacity:1 !important; transform:translateY(0) !important; }
+.reveal-left { opacity:0; transform:translateX(-60px); transition:opacity 0.9s ease, transform 0.9s ease; }
+.reveal-left.visible { opacity:1 !important; transform:translateX(0) !important; }
+.reveal-right { opacity:0; transform:translateX(60px); transition:opacity 0.9s ease, transform 0.9s ease; }
+.reveal-right.visible { opacity:1 !important; transform:translateX(0) !important; }
+.reveal-scale { opacity:0; transform:scale(0.9); transition:opacity 0.9s ease, transform 0.9s ease; }
+.reveal-scale.visible { opacity:1 !important; transform:scale(1) !important; }
+.reveal-delay-1 { transition-delay:0.15s !important; }
+.reveal-delay-2 { transition-delay:0.3s !important; }
+.reveal-delay-3 { transition-delay:0.45s !important; }
+.reveal-delay-4 { transition-delay:0.6s !important; }
+
+/* GLITCH on hover for hero title */
+.hero-title:hover span { animation: glitch 0.4s steps(2) 1; }
+@keyframes glitch {
+  0%   { text-shadow: 2px 0 var(--red), -2px 0 #00f; }
+  25%  { text-shadow: -2px 0 var(--red), 2px 0 #00f; }
+  50%  { text-shadow: 2px 2px var(--red), -2px -2px #00f; }
+  75%  { text-shadow: -1px 0 var(--red), 1px 0 #00f; }
+  100% { text-shadow: none; }
+}
+
+@media (max-width:768px) {
+  nav { padding:1.2rem 1.5rem; }
+  .nav-links { display:none; }
+  section { padding:4rem 1.5rem; }
+  .hero { padding:0 1.5rem 4rem; }
+  .about-grid { grid-template-columns:1fr; gap:2rem; }
+  .film-card { grid-template-columns:1fr; }
+  .film-visual { min-height:180px; }
+  footer { flex-direction:column; gap:1rem; text-align:center; }
+  .hero-frame { width:80vw; height:40vh; }
+}
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- LOADER -->
+<div class="loader" id="loader">
+  <div class="loader-frame">
+    <div class="c tl"></div><div class="c tr"></div>
+    <div class="c bl"></div><div class="c br"></div>
+  </div>
+  <div class="loader-count" id="loaderCount">0</div>
+  <div class="loader-bar"><div class="loader-bar-fill" id="loaderFill"></div></div>
+  <div class="loader-label">Loading Frame Flow</div>
+</div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo">Frame Flow</a>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#work">Work</a>
+    <a href="#vision">Vision</a>
+    <a href="#contact">Contact</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="hero-bg"></div>
+  <div class="scanline"></div>
+  <div class="hero-frame">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+  </div>
+  <div class="hero-eyebrow">Filmmaker &middot; Director &middot; Editor &middot; Bhoa, Pathankot</div>
+  <h1 class="hero-title">Madhav<br><span>Birdh</span></h1>
+  <p class="hero-sub">Every moment is a frame &mdash; Frame Flow</p>
+  <div class="hero-scroll"><div class="scroll-line"></div><span>Scroll</span></div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track">
+    <span class="acc">Frame Flow</span><span>Direction</span><span class="acc">&mdash;</span><span>Cinematography</span><span class="acc">&mdash;</span><span>Editing</span><span class="acc">&mdash;</span><span>Color Grading</span><span class="acc">&mdash;</span><span>Scriptwriting</span><span class="acc">&mdash;</span><span>Don't Open the Door</span><span class="acc">&mdash;</span><span>Madhav Birdh</span><span class="acc">&mdash;</span>
+    <span class="acc">Frame Flow</span><span>Direction</span><span class="acc">&mdash;</span><span>Cinematography</span><span class="acc">&mdash;</span><span>Editing</span><span class="acc">&mdash;</span><span>Color Grading</span><span class="acc">&mdash;</span><span>Scriptwriting</span><span class="acc">&mdash;</span><span>Don't Open the Door</span><span class="acc">&mdash;</span><span>Madhav Birdh</span><span class="acc">&mdash;</span>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-label">About</div>
+  <div class="about-grid">
+    <div>
+      <blockquote class="about-quote reveal-left">
+        "Every time I open my eyes, I see a frame. Cinema is not what I do — it is how I see the world."
+      </blockquote>
+      <div class="about-stats reveal reveal-delay-2">
+        <div class="stat"><div class="stat-num" data-count="18">0</div><div class="stat-label">Years old</div></div>
+        <div class="stat"><div class="stat-num" data-count="946">0</div><div class="stat-label">Views on debut film</div></div>
+        <div class="stat"><div class="stat-num" data-count="2">0</div><div class="stat-label">Days to make first film</div></div>
+        <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Self-taught</div></div>
+      </div>
+    </div>
+    <div class="about-text reveal-right">
+      <p>I am a self-taught filmmaker from Bhoa, Pathankot, Punjab. From childhood, storytelling through cinema has been my calling — not just as a craft, but as a way of life.</p>
+      <p>I write, direct, shoot, and edit my own films. My debut short film "Don't Open the Door" was shot, directed, and edited by me in just two days — and earned 946 views organically.</p>
+      <p>The name Frame Flow came from a moment of pure instinct — I made a frame with my own hands, felt it, and understood: this is how I see life. Every moment flows. Every moment is a frame.</p>
+      <p>Currently applying to AAFT Noida — B.Sc Cinema — to sharpen my craft and build a team that shares this vision.</p>
+    </div>
+  </div>
+</section>
+
+<!-- WORK -->
+<section class="film-section" id="work">
+  <div class="section-label">Featured Film</div>
+  <div class="film-card reveal-scale">
+    <div class="film-visual">
+      <div class="film-genre-tag">Horror &middot; Thriller</div>
+      <a href="https://www.youtube.com/watch?v=tO4jVVyaKcw" target="_blank" class="film-play">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </a>
+    </div>
+    <div class="film-info">
+      <div>
+        <h2 class="film-title">Don't Open<br>the Door</h2>
+        <p class="film-desc">A psychological horror short film built entirely around dread and atmosphere. A mysterious warning note. A choice. An ending you don't see coming. Shot in a single location — every frame planned, every shadow intentional.</p>
+        <div class="film-roles-list">
+          <span class="role-tag">Director</span>
+          <span class="role-tag">Cinematographer</span>
+          <span class="role-tag">Editor</span>
+          <span class="role-tag">Color Grading</span>
+          <span class="role-tag">Concept</span>
+        </div>
+      </div>
+      <div class="film-meta-row">
+        <div class="meta-item"><div class="meta-val">946</div><div class="meta-key">Views</div></div>
+        <div class="meta-item"><div class="meta-val">2:30</div><div class="meta-key">Runtime</div></div>
+        <div class="meta-item"><div class="meta-val">2</div><div class="meta-key">Days made in</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills">
+  <div class="section-label">Skills &amp; Tools</div>
+  <div class="skills-grid">
+    <div class="skill-item reveal"><div class="skill-name">Direction</div><div class="skill-desc">Conceptualizing scenes, guiding actors, building atmosphere from nothing.</div><div class="skill-level"><div class="skill-level-fill" data-width="85"></div></div></div>
+    <div class="skill-item reveal reveal-delay-1"><div class="skill-name">Cinematography</div><div class="skill-desc">Camera angles, shot composition, visual storytelling through the lens.</div><div class="skill-level"><div class="skill-level-fill" data-width="70"></div></div></div>
+    <div class="skill-item reveal reveal-delay-2"><div class="skill-name">Video Editing</div><div class="skill-desc">Adobe Premiere Pro — cutting, pacing, rhythm, and flow.</div><div class="skill-level"><div class="skill-level-fill" data-width="80"></div></div></div>
+    <div class="skill-item reveal reveal-delay-3"><div class="skill-name">Color Grading</div><div class="skill-desc">DaVinci Resolve — mood through color, cinematic tones.</div><div class="skill-level"><div class="skill-level-fill" data-width="75"></div></div></div>
+    <div class="skill-item reveal reveal-delay-4"><div class="skill-name">Scriptwriting</div><div class="skill-desc">Crafting stories that demand to be filmed.</div><div class="skill-level"><div class="skill-level-fill" data-width="78"></div></div></div>
+  </div>
+  <div class="tools-row">
+    <div class="tool-item reveal">Adobe Premiere Pro</div>
+    <div class="tool-item reveal reveal-delay-1">DaVinci Resolve</div>
+    <div class="tool-item reveal reveal-delay-2">YouTube — Frame Flow</div>
+    <div class="tool-item reveal reveal-delay-3">Instagram — @frameflowofficial_</div>
+  </div>
+</section>
+
+<!-- VISION -->
+<section class="vision-section" id="vision">
+  <div class="section-label">Vision</div>
+  <p class="vision-text reveal">"When you are aware, everything around you is already a shot waiting to be taken. When you are not, even the most beautiful view means nothing. I want to make films that make people <strong>THINK</strong> — not just watch."</p>
+  <p class="vision-origin reveal reveal-delay-2">Cinema without meaning is just noise. My goal is to build a body of work that is intelligent, layered, and unforgettable — films that respect the audience's mind the way Christopher Nolan does.</p>
+  <p class="inspired-by reveal reveal-delay-3">Inspired by the work of Christopher Nolan</p>
+</section>
+
+<!-- CONTACT -->
+<section class="contact-section" id="contact">
+  <h2 class="contact-title reveal">Let's Make<br><span>Something.</span></h2>
+  <p class="contact-sub reveal reveal-delay-1">Filmmaker &middot; Collaborator &middot; Bhoa, Pathankot, Punjab</p>
+  <div class="contact-links reveal reveal-delay-2">
+    <a href="mailto:madhavvbirdh@gmail.com" class="contact-btn primary">madhavvbirdh@gmail.com</a>
+    <a href="https://www.youtube.com/@Frameflow-x4f" target="_blank" class="contact-btn">
+      <svg viewBox="0 0 24 24"><path d="M21.8 8s-.2-1.4-.8-2c-.8-.8-1.6-.8-2-.9C16.8 5 12 5 12 5s-4.8 0-7 .1c-.4.1-1.2.1-2 .9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.8C6.8 19 12 19 12 19s4.8 0 7-.2c.4-.1 1.2-.1 2-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.7 14.5V9l5.4 2.8-5.4 2.7z"/></svg>
+      YouTube
+    </a>
+    <a href="https://www.instagram.com/frameflowofficial_" target="_blank" class="contact-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+      Instagram
+    </a>
+  </div>
+  <div class="social-row reveal reveal-delay-3">
+    <a href="https://www.youtube.com/@Frameflow-x4f" target="_blank" class="social-link">
+      <svg viewBox="0 0 24 24"><path d="M21.8 8s-.2-1.4-.8-2c-.8-.8-1.6-.8-2-.9C16.8 5 12 5 12 5s-4.8 0-7 .1c-.4.1-1.2.1-2 .9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.8C6.8 19 12 19 12 19s4.8 0 7-.2c.4-.1 1.2-.1 2-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.7 14.5V9l5.4 2.8-5.4 2.7z"/></svg>
+    </a>
+    <a href="https://www.instagram.com/frameflowofficial_" target="_blank" class="social-link">
+      <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+    </a>
+    <a href="mailto:madhavvbirdh@gmail.com" class="social-link">
+      <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+    </a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">Frame Flow</div>
+  <div class="footer-copy">&copy; 2026 Madhav Birdh. All rights reserved.</div>
+</footer>
+
+<script>
+// LOADER
+const loader = document.getElementById('loader');
+const countEl = document.getElementById('loaderCount');
+const fillEl = document.getElementById('loaderFill');
+let count = 0;
+const countInterval = setInterval(() => {
+  count += Math.floor(Math.random() * 7) + 2;
+  if (count >= 100) {
+    count = 100;
+    clearInterval(countInterval);
+    setTimeout(() => loader.classList.add('hidden'), 500);
+  }
+  countEl.textContent = count;
+  fillEl.style.transform = `scaleX(${count/100})`;
+}, 55);
+
+// CURSOR
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx=0, my=0, rx=0, ry=0;
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx-3+'px'; cursor.style.top = my-3+'px';
+});
+document.querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('mouseenter', () => ring.classList.add('hovered'));
+  el.addEventListener('mouseleave', () => ring.classList.remove('hovered'));
+});
+(function animRing() {
+  rx += (mx-rx)*0.12; ry += (my-ry)*0.12;
+  ring.style.left = rx-16+'px'; ring.style.top = ry-16+'px';
+  requestAnimationFrame(animRing);
+})();
+
+// NAV
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 50);
+});
+
+// SCROLL REVEAL — all 4 types
+const allReveal = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      // skill bars
+      e.target.querySelectorAll('.skill-level-fill').forEach(f => {
+        setTimeout(() => { f.style.width = f.dataset.width + '%'; }, 200);
+      });
+      // count up numbers
+      e.target.querySelectorAll('[data-count]').forEach(el => {
+        const target = parseInt(el.dataset.count);
+        let cur = 0;
+        const step = Math.ceil(target / 50);
+        const t = setInterval(() => {
+          cur = Math.min(cur + step, target);
+          el.textContent = cur;
+          if (cur >= target) clearInterval(t);
+        }, 35);
+      });
+      obs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+allReveal.forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
